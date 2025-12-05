@@ -1,0 +1,72 @@
+# Main Cloud Build Configuration
+# This file orchestrates builds for both backend and frontend
+
+steps:
+  # Build and push backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-backend'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/admin-backend:latest'
+      - '-f'
+      - 'apps/admin-backend/Dockerfile'
+      - '.'
+    timeout: 1200s
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-backend'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
+    waitFor: ['build-backend']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-backend-latest'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/admin-backend:latest'
+    waitFor: ['build-backend']
+
+  # Build and push admin panel image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-admin-panel'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/admin-panel:latest'
+      - '-f'
+      - 'apps/admin-panel/Dockerfile'
+      - '.'
+    timeout: 1200s
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-admin-panel'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+    waitFor: ['build-admin-panel']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-admin-panel-latest'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/admin-panel:latest'
+    waitFor: ['build-admin-panel']
+
+# Store images in Google Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/admin-backend:latest'
+  - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/admin-panel:latest'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  
+timeout: 3600s

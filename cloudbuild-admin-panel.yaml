@@ -1,0 +1,63 @@
+# Cloud Build Configuration for Admin Panel Service Only
+# Use this for isolated frontend builds/deployments
+
+steps:
+  # Build admin panel Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-admin-panel'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/admin-panel:latest'
+      - '-f'
+      - 'apps/admin-panel/Dockerfile'
+      - '.'
+    timeout: 1200s
+
+  # Push admin panel image with commit SHA tag
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-admin-panel-sha'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+    waitFor: ['build-admin-panel']
+
+  # Push admin panel image with latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-admin-panel-latest'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/admin-panel:latest'
+    waitFor: ['build-admin-panel']
+
+  # Deploy to Cloud Run (optional - uncomment and configure as needed)
+  # - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  #   id: 'deploy-admin-panel'
+  #   entrypoint: gcloud
+  #   args:
+  #     - 'run'
+  #     - 'deploy'
+  #     - 'admin-panel'
+  #     - '--image'
+  #     - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+  #     - '--region'
+  #     - 'us-central1'
+  #     - '--platform'
+  #     - 'managed'
+  #     - '--allow-unauthenticated'
+  #     - '--set-env-vars'
+  #     - 'NODE_ENV=production,PORT=3001'
+  #   waitFor: ['push-admin-panel-sha']
+
+# Store images in Google Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/admin-panel:latest'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1800s

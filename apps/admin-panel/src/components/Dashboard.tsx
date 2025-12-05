@@ -3,7 +3,7 @@ import { LoginResponse } from '@admin-platform/shared-auth';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
-  user: LoginResponse['user'];
+  user: LoginResponse["user"];
   onLogout: () => void;
   postsStats: {
     totalUsers: number;
@@ -29,6 +29,10 @@ interface DashboardProps {
       totalPostCount: number;
       totalRewards: number;
       averageReward: number;
+    }>;
+    userGrowth: Array<{
+      date: string;
+      count: number;
     }>;
   } | null;
   isLoadingData: boolean;

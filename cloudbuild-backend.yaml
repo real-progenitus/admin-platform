@@ -1,0 +1,63 @@
+# Cloud Build Configuration for Backend Service Only
+# Use this for isolated backend builds/deployments
+
+steps:
+  # Build backend Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-backend'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/admin-backend:latest'
+      - '-f'
+      - 'apps/admin-backend/Dockerfile'
+      - '.'
+    timeout: 1200s
+
+  # Push backend image with commit SHA tag
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-backend-sha'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
+    waitFor: ['build-backend']
+
+  # Push backend image with latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-backend-latest'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/admin-backend:latest'
+    waitFor: ['build-backend']
+
+  # Deploy to Cloud Run (optional - uncomment and configure as needed)
+  # - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  #   id: 'deploy-backend'
+  #   entrypoint: gcloud
+  #   args:
+  #     - 'run'
+  #     - 'deploy'
+  #     - 'admin-backend'
+  #     - '--image'
+  #     - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
+  #     - '--region'
+  #     - 'us-central1'
+  #     - '--platform'
+  #     - 'managed'
+  #     - '--allow-unauthenticated'
+  #     - '--set-env-vars'
+  #     - 'NODE_ENV=production'
+  #   waitFor: ['push-backend-sha']
+
+# Store images in Google Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/admin-backend:latest'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1800s
