@@ -208,37 +208,25 @@ export class FirestoreService implements OnModuleInit {
    */
   async getUserGrowthLastMonth(): Promise<{ date: string; count: number }[]> {
     try {
-      const now = new Date();
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      
       // Map to store daily counts
       const dailyCounts = new Map<string, number>();
-      
-      // Initialize all dates with 0
-      for (let i = 0; i < 30; i++) {
-        const date = new Date(thirtyDaysAgo.getTime() + i * 24 * 60 * 60 * 1000);
-        const dateStr = date.toISOString().split('T')[0];
-        dailyCounts.set(dateStr, 0);
-      }
 
       let nextPageToken: string | undefined;
 
       do {
-        const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
-        
-        listUsersResult.users.forEach(user => {
+        const listUsersResult = await admin
+          .auth()
+          .listUsers(1000, nextPageToken);
+
+        listUsersResult.users.forEach((user) => {
           if (user.metadata.creationTime) {
             const createdDate = new Date(user.metadata.creationTime);
-            
-            // Only count users created in the last 30 days
-            if (createdDate >= thirtyDaysAgo) {
-              const dateStr = createdDate.toISOString().split('T')[0];
-              const currentCount = dailyCounts.get(dateStr) || 0;
-              dailyCounts.set(dateStr, currentCount + 1);
-            }
+            const dateStr = createdDate.toISOString().split('T')[0];
+            const currentCount = dailyCounts.get(dateStr) || 0;
+            dailyCounts.set(dateStr, currentCount + 1);
           }
         });
-        
+
         nextPageToken = listUsersResult.pageToken;
       } while (nextPageToken);
 
@@ -247,7 +235,9 @@ export class FirestoreService implements OnModuleInit {
         .map(([date, count]) => ({ date, count }))
         .sort((a, b) => a.date.localeCompare(b.date));
 
-      this.logger.log(`User growth data retrieved for last 30 days`);
+      this.logger.log(
+        `User growth data retrieved: ${result.length} days of data`,
+      );
       return result;
     } catch (error) {
       this.logger.error('Error getting user growth data:', error);
