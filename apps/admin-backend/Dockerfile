@@ -24,12 +24,16 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy built files
-COPY --from=builder /app/dist/apps/admin-backend ./
+# Copy built files - Nx tsc outputs to dist/apps/admin-backend/src
+COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
 
 # Expose port
 EXPOSE 3000
 
-# Start app
-CMD ["node", "main.js"]
+# Set environment
+ENV NODE_ENV=production
+
+# Start app from the correct path
+CMD ["node", "dist/apps/admin-backend/src/main.js"]

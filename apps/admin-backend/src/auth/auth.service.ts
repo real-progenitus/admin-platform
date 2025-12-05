@@ -14,11 +14,16 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(registerRequest: RegisterRequest): Promise<{ message: string; user: { id: string; email: string; role: string } }> {
-    const { email, password, name } = registerRequest;
+  async register(registerRequest: RegisterRequest): Promise<{
+    message: string;
+    user: { id: string; email: string; role: string };
+  }> {
+    const { email, password, name, role } = registerRequest;
 
     // Check if user already exists
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -28,7 +33,7 @@ export class AuthService {
     user.email = email;
     user.password = password; // Will be auto-hashed by the entity
     user.name = name;
-    user.role = UserRole.USER; // Default role, change to ADMIN if needed
+    user.role = role || UserRole.USER; // Use provided role or default to USER
 
     const savedUser = await this.userRepository.save(user);
 
@@ -39,6 +44,45 @@ export class AuthService {
         email: savedUser.email,
         role: savedUser.role,
       },
+    };
+  }
+
+  async getUsers(): Promise<
+    Array<{
+      id: string;
+      email: string;
+      name?: string;
+      role: string;
+      createdAt: Date;
+    }>
+  > {
+    const users = await this.userRepository.find({
+      select: ['id', 'email', 'name', 'role', 'createdAt'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return users;
+  }
+
+  async deleteUser(
+    userId: string,
+    requestingUserRole: string,
+  ): Promise<{ message: string }> {
+    // Only SUPER_ADMIN can delete users
+    if (requestingUserRole !== UserRole.SUPER_ADMIN) {
+      throw new UnauthorizedException('Only super admins can delete users');
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    await this.userRepository.remove(user);
+
+    return {
+      message: 'User deleted successfully',
     };
   }
 
@@ -66,10 +110,12 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload);
-    
+
     // Generate refresh token with longer expiry
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env['JWT_REFRESH_SECRET'] || 'refresh-secret-change-in-production',
+      secret:
+        process.env['JWT_REFRESH_SECRET'] ||
+        'refresh-secret-change-in-production',
       expiresIn: '7d',
     });
 
@@ -87,7 +133,9 @@ export class AuthService {
   async refreshToken(token: string): Promise<{ accessToken: string }> {
     try {
       const payload = this.jwtService.verify(token, {
-        secret: process.env['JWT_REFRESH_SECRET'] || 'refresh-secret-change-in-production',
+        secret:
+          process.env['JWT_REFRESH_SECRET'] ||
+          'refresh-secret-change-in-production',
       });
 
       const user = await this.validateUser(payload.sub);

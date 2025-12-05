@@ -7,22 +7,14 @@ steps:
     id: 'build-admin-panel'
     args:
       - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://admin-backend-601407624452.us-central1.run.app'
       - '-t'
       - 'gcr.io/$PROJECT_ID/admin-panel:latest'
       - '-f'
       - 'apps/admin-panel/Dockerfile'
       - '.'
     timeout: 1200s
-
-  # Push admin panel image with commit SHA tag
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-admin-panel-sha'
-    args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
-    waitFor: ['build-admin-panel']
 
   # Push admin panel image with latest tag
   - name: 'gcr.io/cloud-builders/docker'
@@ -41,7 +33,7 @@ steps:
   #     - 'deploy'
   #     - 'admin-panel'
   #     - '--image'
-  #     - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
+  #     - 'gcr.io/$PROJECT_ID/admin-panel:latest'
   #     - '--region'
   #     - 'us-central1'
   #     - '--platform'
@@ -49,15 +41,19 @@ steps:
   #     - '--allow-unauthenticated'
   #     - '--set-env-vars'
   #     - 'NODE_ENV=production,PORT=3001'
-  #   waitFor: ['push-admin-panel-sha']
+  #   waitFor: ['push-admin-panel-latest']
 
 # Store images in Google Container Registry
 images:
-  - 'gcr.io/$PROJECT_ID/admin-panel:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/admin-panel:latest'
+
+# Substitutions for manual builds
+substitutions:
+  _COMMIT_SHA: '${COMMIT_SHA:-manual-${SHORT_SHA:-latest}}'
 
 options:
   machineType: 'N1_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
+  substitution_option: 'ALLOW_LOOSE'
 
 timeout: 1800s

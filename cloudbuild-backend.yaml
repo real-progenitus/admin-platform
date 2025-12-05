@@ -8,21 +8,11 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
-      - '-t'
       - 'gcr.io/$PROJECT_ID/admin-backend:latest'
       - '-f'
       - 'apps/admin-backend/Dockerfile'
       - '.'
     timeout: 1200s
-
-  # Push backend image with commit SHA tag
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-backend-sha'
-    args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
-    waitFor: ['build-backend']
 
   # Push backend image with latest tag
   - name: 'gcr.io/cloud-builders/docker'
@@ -41,7 +31,7 @@ steps:
   #     - 'deploy'
   #     - 'admin-backend'
   #     - '--image'
-  #     - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
+  #     - 'gcr.io/$PROJECT_ID/admin-backend:latest'
   #     - '--region'
   #     - 'us-central1'
   #     - '--platform'
@@ -49,11 +39,10 @@ steps:
   #     - '--allow-unauthenticated'
   #     - '--set-env-vars'
   #     - 'NODE_ENV=production'
-  #   waitFor: ['push-backend-sha']
+  #   waitFor: ['push-backend-latest']
 
 # Store images in Google Container Registry
 images:
-  - 'gcr.io/$PROJECT_ID/admin-backend:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/admin-backend:latest'
 
 options:

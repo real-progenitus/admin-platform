@@ -1,7 +1,24 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Res, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  HttpCode,
+  HttpStatus,
+  Res,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
-import { LoginRequest, LoginResponse, RegisterRequest } from '@admin-platform/shared-auth';
+import {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+} from '@admin-platform/shared-auth';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
@@ -9,10 +26,39 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  // @UseGuards(JwtAuthGuard) // Requires authentication
+  @UseGuards(JwtAuthGuard) // Requires authentication
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() registerRequest: RegisterRequest): Promise<{ message: string; user: { id: string; email: string; role: string } }> {
+  async register(@Body() registerRequest: RegisterRequest): Promise<{
+    message: string;
+    user: { id: string; email: string; role: string };
+  }> {
     return this.authService.register(registerRequest);
+  }
+
+  @Get('users')
+  @UseGuards(JwtAuthGuard) // Requires authentication
+  @HttpCode(HttpStatus.OK)
+  async getUsers(): Promise<
+    Array<{
+      id: string;
+      email: string;
+      name?: string;
+      role: string;
+      createdAt: Date;
+    }>
+  > {
+    return this.authService.getUsers();
+  }
+
+  @Delete('users/:id')
+  @UseGuards(JwtAuthGuard) // Requires authentication
+  @HttpCode(HttpStatus.OK)
+  async deleteUser(
+    @Param('id') userId: string,
+    @Req() request: Request,
+  ): Promise<{ message: string }> {
+    const user = (request as any).user;
+    return this.authService.deleteUser(userId, user.role);
   }
 
   @Post('login')
@@ -54,7 +100,9 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Res({ passthrough: true }) response: Response): Promise<{ message: string }> {
+  async logout(
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ message: string }> {
     response.clearCookie('refreshToken', { path: '/auth/refresh' });
     return { message: 'Logged out successfully' };
   }

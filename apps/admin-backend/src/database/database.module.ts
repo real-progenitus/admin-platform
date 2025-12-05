@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
+import { DatabaseInitService } from './database-init.service';
 
 @Module({
   imports: [
@@ -12,9 +13,11 @@ import { User } from './entities/user.entity';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'admin_platform',
       entities: [User],
-      synchronize: process.env.NODE_ENV !== 'production', // Auto-sync in development
+      synchronize: true, // Enable auto-sync (use migrations in production later)
       logging: false, // Disable SQL query logging
     }),
+    TypeOrmModule.forFeature([User]),
   ],
+  providers: [DatabaseInitService],
 })
 export class DatabaseModule {}

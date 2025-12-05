@@ -23,6 +23,7 @@ export default function Home() {
         isLoadingData={firestore.isLoadingData}
         dataError={firestore.dataError}
         fetchPostsStats={firestore.fetchPostsStats}
+        accessToken={auth.accessToken}
       />
     );
   }

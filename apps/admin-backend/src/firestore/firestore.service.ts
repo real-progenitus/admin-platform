@@ -8,23 +8,36 @@ export class FirestoreService implements OnModuleInit {
   private firestore: admin.firestore.Firestore;
 
   onModuleInit() {
-    const config = getFirebaseConfig();
-    
-    if (!validateFirebaseConfig(config)) {
-      throw new Error('Invalid Firebase configuration. Check your environment variables.');
-    }
-
     if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: config.projectId,
-          privateKey: config.privateKey,
-          clientEmail: config.clientEmail,
-        }),
-        databaseURL: config.databaseURL,
-        storageBucket: config.storageBucket,
-      });
-      this.logger.log('Firebase Admin initialized');
+      // In Cloud Run, use Application Default Credentials
+      if (process.env.K_SERVICE) {
+        admin.initializeApp({
+          credential: admin.credential.applicationDefault(),
+        });
+        this.logger.log(
+          'Firebase Admin initialized with Application Default Credentials',
+        );
+      } else {
+        // In local development, use service account from env vars
+        const config = getFirebaseConfig();
+
+        if (!validateFirebaseConfig(config)) {
+          throw new Error(
+            'Invalid Firebase configuration. Check your environment variables.',
+          );
+        }
+
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId: config.projectId,
+            privateKey: config.privateKey,
+            clientEmail: config.clientEmail,
+          }),
+          databaseURL: config.databaseURL,
+          storageBucket: config.storageBucket,
+        });
+        this.logger.log('Firebase Admin initialized with service account');
+      }
     }
 
     this.firestore = admin.firestore();

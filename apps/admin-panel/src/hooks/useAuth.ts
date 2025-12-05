@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LoginRequest, LoginResponse } from '@admin-platform/shared-auth';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export function useAuth() {
   const [email, setEmail] = useState('');
