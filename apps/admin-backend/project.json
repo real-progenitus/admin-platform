@@ -1,0 +1,84 @@
+{
+  "name": "admin-backend",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/admin-backend/src",
+  "projectType": "application",
+  "tags": ["type:app", "scope:backend"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/admin-backend",
+        "main": "apps/admin-backend/src/main.ts",
+        "tsConfig": "apps/admin-backend/tsconfig.app.json",
+        "assets": ["apps/admin-backend/src/assets"],
+        "external": [
+          "@admin-platform/shared-types",
+          "@admin-platform/shared-utils",
+          "@admin-platform/shared-auth",
+          "@admin-platform/shared-firebase"
+        ]
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false
+        }
+      }
+    },
+    "dev": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "admin-backend:build",
+        "watch": true
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "admin-backend:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "admin-backend:build:development"
+        },
+        "production": {
+          "buildTarget": "admin-backend:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/admin-backend/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/admin-backend/jest.config.ts",
+        "passWithNoTests": true
+      },
+      "configurations": {
+        "ci": {
+          "ci": true,
+          "codeCoverage": true
+        }
+      }
+    },
+    "seed": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "admin-backend:build",
+        "buildTargetOptions": {
+          "main": "apps/admin-backend/src/seed.ts"
+        }
+      }
+    }
+  }
+}
