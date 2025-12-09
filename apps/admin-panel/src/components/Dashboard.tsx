@@ -58,6 +58,64 @@ export function Dashboard({
   accessToken,
 }: DashboardProps) {
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [currentMonthIndex, setCurrentMonthIndex] = useState<number>(0);
+
+  // Get available months from user growth data
+  const availableMonths = React.useMemo(() => {
+    if (!postsStats?.userGrowth || postsStats.userGrowth.length === 0) {
+      return [];
+    }
+    const months = new Set<string>();
+    postsStats.userGrowth.forEach((item) => {
+      const date = new Date(item.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      months.add(monthKey);
+    });
+    return Array.from(months).sort().reverse();
+  }, [postsStats?.userGrowth]);
+
+  // Get current selected month
+  const selectedMonth = availableMonths[currentMonthIndex];
+
+  // Filter user growth data by selected month
+  const filteredUserGrowth = React.useMemo(() => {
+    if (!postsStats?.userGrowth) return [];
+    if (!selectedMonth || availableMonths.length === 0)
+      return postsStats.userGrowth;
+
+    return postsStats.userGrowth.filter((item) => {
+      const date = new Date(item.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      return monthKey === selectedMonth;
+    });
+  }, [postsStats?.userGrowth, selectedMonth, availableMonths.length]);
+
+  // Get formatted month name
+  const currentMonthName = React.useMemo(() => {
+    if (!selectedMonth || availableMonths.length === 0) return "All Time";
+    const [year, monthNum] = selectedMonth.split("-");
+    const date = new Date(parseInt(year), parseInt(monthNum) - 1);
+    return date.toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
+  }, [selectedMonth, availableMonths.length]);
+
+  // Navigation handlers
+  const canGoBack = currentMonthIndex < availableMonths.length - 1;
+  const canGoForward = currentMonthIndex > 0;
+
+  const handlePreviousMonth = () => {
+    if (canGoBack) {
+      setCurrentMonthIndex((prev) => prev + 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (canGoForward) {
+      setCurrentMonthIndex((prev) => prev - 1);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
@@ -422,26 +480,81 @@ export function Dashboard({
         {/* User Growth Chart - Full Width */}
         <div className="mb-6">
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <svg
-                className="w-5 h-5 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-              <h3 className="text-lg font-bold text-gray-800">
-                User Growth - Last 30 Days
-              </h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <svg
+                  className="w-5 h-5 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+                <h3 className="text-lg font-bold text-gray-800">User Growth</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePreviousMonth}
+                  disabled={!canGoBack}
+                  className={`p-2 rounded-lg transition-all ${
+                    canGoBack
+                      ? "bg-purple-100 hover:bg-purple-200 text-purple-700"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+                  title="Previous month"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+                <div className="min-w-[180px] text-center">
+                  <p className="text-sm font-bold text-gray-800">
+                    {currentMonthName}
+                  </p>
+                </div>
+                <button
+                  onClick={handleNextMonth}
+                  disabled={!canGoForward}
+                  className={`p-2 rounded-lg transition-all ${
+                    canGoForward
+                      ? "bg-purple-100 hover:bg-purple-200 text-purple-700"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+                  title="Next month"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={postsStats?.userGrowth || []}>
+              <BarChart data={filteredUserGrowth}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"

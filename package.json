@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "build": "nx run-many --target=build --all",
-    "dev": "nx run-many --target=dev --all --parallel",
+    "dev": "concurrently \"npm run db:proxy\" \"nx run-many --target=dev --all --parallel\"",
+    "db:proxy": "cloud-sql-proxy --port 5433 ifound-4a41c:us-central1:admin-platform-db",
     "lint": "nx run-many --target=lint --all",
     "test": "nx run-many --target=test --all",
     "admin-backend:dev": "nx dev admin-backend",
@@ -70,6 +71,7 @@
     "@types/react-dom": "^18.3.1",
     "@types/supertest": "^6.0.2",
     "autoprefixer": "^10.4.22",
+    "concurrently": "^9.2.1",
     "eslint": "^9.18.0",
     "eslint-config-next": "^15.0.3",
     "eslint-config-prettier": "^10.0.1",
