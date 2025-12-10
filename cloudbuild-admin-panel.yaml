@@ -8,7 +8,7 @@ steps:
     args:
       - 'build'
       - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=https://admin-backend-601407624452.us-central1.run.app'
+      - 'NEXT_PUBLIC_API_URL=https://admin-backend-601407624452.europe-west1.run.app'
       - '-t'
       - 'gcr.io/$PROJECT_ID/admin-panel:latest'
       - '-f'

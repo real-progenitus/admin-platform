@@ -32,11 +32,9 @@ WORKDIR /app
 RUN apk add --no-cache dumb-init
 
 # Copy the Next.js build from source (Nx doesn't move .next to dist)
-COPY --from=builder /app/apps/admin-panel/.next ./.next
-COPY --from=builder /app/apps/admin-panel/public ./public
-COPY --from=builder /app/apps/admin-panel/next.config.js ./
-COPY --from=builder /app/apps/admin-panel/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/admin-panel/.next/standalone ./
+COPY --from=builder /app/apps/admin-panel/.next/static ./apps/admin-panel/.next/static
+COPY --from=builder /app/apps/admin-panel/public ./apps/admin-panel/public
 
 EXPOSE 3001
 
@@ -44,4 +42,4 @@ ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 
-CMD ["dumb-init", "node_modules/.bin/next", "start", "-p", "3001"]
+CMD ["dumb-init", "node", "apps/admin-panel/server.js"]

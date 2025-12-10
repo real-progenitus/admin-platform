@@ -12,6 +12,7 @@ async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:3001',
     'https://admin-panel-601407624452.us-central1.run.app',
+    'https://admin-panel-601407624452.europe-west1.run.app',
   ];
   
   app.enableCors({
