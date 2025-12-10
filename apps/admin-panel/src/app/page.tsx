@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useFirestore } from '../hooks/useFirestore';
 import { LoginForm } from '../components/LoginForm';
 import { Dashboard } from '../components/Dashboard';
+import { LoadingScreen } from "../components/LoadingScreen";
 
 export default function Home() {
   const auth = useAuth();
@@ -14,15 +15,27 @@ export default function Home() {
     firestore.resetData();
   };
 
+  // Show loading screen while checking for existing session
+  if (auth.isCheckingAuth) {
+    return <LoadingScreen />;
+  }
+
   if (auth.isAuthenticated && auth.user) {
     return (
       <Dashboard
         user={auth.user}
         onLogout={handleLogout}
-        postsStats={firestore.postsStats}
+        landingStats={firestore.landingStats}
+        userMetrics={firestore.userMetrics}
+        latestSearches={firestore.latestSearches}
+        accessCodes={firestore.accessCodes}
         isLoadingData={firestore.isLoadingData}
         dataError={firestore.dataError}
-        fetchPostsStats={firestore.fetchPostsStats}
+        fetchLandingStats={firestore.fetchLandingStats}
+        fetchUserMetrics={firestore.fetchUserMetrics}
+        fetchLatestSearches={firestore.fetchLatestSearches}
+        fetchAccessCodes={firestore.fetchAccessCodes}
+        fetchAvailableMonths={firestore.fetchAvailableMonths}
         accessToken={auth.accessToken}
       />
     );

@@ -1,8 +1,15 @@
 import './globals.css';
+import { Metadata, Viewport } from "next";
 
-export const metadata = {
-  title: 'Admin Panel',
-  description: 'Admin Panel Login',
+export const metadata: Metadata = {
+  title: "Admin Panel",
+  description: "Admin Panel Login",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -12,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50">{children}</body>
+      <body className="bg-gray-50 overflow-x-hidden">{children}</body>
     </html>
   );
 }

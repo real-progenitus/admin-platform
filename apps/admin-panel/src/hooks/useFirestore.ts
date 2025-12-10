@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-interface PostsStats {
-  totalUsers: number;
+interface LandingStats {
   totalPosts: number;
   lostPosts: number;
   foundPosts: number;
@@ -11,49 +10,79 @@ interface PostsStats {
   postsWithReward: number;
   postsWithoutReward: number;
   percentageWithReward: number;
-  totalPartners: number;
-  totalPartnerLocations: number;
   searchLogsLastWeek: number;
   resolvedPosts: number;
-  latestSearches: Array<{
-    id: string;
-    query: string;
-    timestamp: number;
-  }>;
-  unusedAccessCodes: string[];
   categoryStats: Array<{
     category: string;
     totalPostCount: number;
     totalRewards: number;
     averageReward: number;
   }>;
+}
+
+interface UserMetrics {
+  totalUsers: number;
+  totalPartners: number;
+  totalPartnerLocations: number;
   userGrowth: Array<{
     date: string;
     count: number;
   }>;
+  availableMonths?: string[];
 }
 
-export function useFirestore(accessToken: string | null, isAuthenticated: boolean) {
-  const [firestoreData, setFirestoreData] = useState<any[]>([]);
-  const [postsStats, setPostsStats] = useState<PostsStats | null>(null);
-  const [selectedCollection, setSelectedCollection] = useState('Posts');
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  const [dataError, setDataError] = useState('');
+interface LatestSearches {
+  latestSearches: Array<{
+    id: string;
+    query: string;
+    timestamp: number;
+  }>;
+  searchLogsLastWeek: number;
+}
 
-  const fetchPostsStats = async () => {
+interface AccessCodes {
+  accessCodes: Array<{
+    id: string;
+    code: string;
+    used: boolean;
+    usedByEmail: string | null;
+    createdAt: number;
+  }>;
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export function useFirestore(
+  accessToken: string | null,
+  isAuthenticated: boolean
+) {
+  const [firestoreData, setFirestoreData] = useState<any[]>([]);
+  const [landingStats, setLandingStats] = useState<LandingStats | null>(null);
+  const [userMetrics, setUserMetrics] = useState<UserMetrics | null>(null);
+  const [latestSearches, setLatestSearches] = useState<LatestSearches | null>(
+    null
+  );
+  const [accessCodes, setAccessCodes] = useState<AccessCodes | null>(null);
+  const [selectedCollection, setSelectedCollection] = useState("Posts");
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [dataError, setDataError] = useState("");
+
+  const fetchLandingStats = async () => {
     if (!accessToken) return;
-    
+
     setIsLoadingData(true);
-    setDataError('');
-    
+    setDataError("");
+
     try {
       const response = await fetch(`${API_URL}/metrics/posts/stats`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -61,10 +90,153 @@ export function useFirestore(accessToken: string | null, isAuthenticated: boolea
       }
 
       const data = await response.json();
-      setPostsStats(data);
+      setLandingStats(data);
     } catch (err) {
-      setDataError(err instanceof Error ? err.message : 'Failed to fetch stats');
-      setPostsStats(null);
+      setDataError(
+        err instanceof Error ? err.message : "Failed to fetch stats"
+      );
+      setLandingStats(null);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const fetchUserMetrics = async (year?: number, month?: number) => {
+    if (!accessToken) return;
+
+    setIsLoadingData(true);
+    setDataError("");
+
+    try {
+      const params = new URLSearchParams();
+      if (year && month) {
+        params.append("year", year.toString());
+        params.append("month", month.toString());
+      }
+
+      const url = `${API_URL}/metrics/user-metrics${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user metrics: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setUserMetrics(data);
+    } catch (err) {
+      setDataError(
+        err instanceof Error ? err.message : "Failed to fetch user metrics"
+      );
+      setUserMetrics(null);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const fetchAvailableMonths = async () => {
+    if (!accessToken) return [];
+
+    try {
+      const response = await fetch(
+        `${API_URL}/metrics/user-metrics/available-months`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch available months: ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      return data.months || [];
+    } catch (err) {
+      console.error("Error fetching available months:", err);
+      return [];
+    }
+  };
+
+  const fetchLatestSearches = async () => {
+    if (!accessToken) return;
+
+    setIsLoadingData(true);
+    setDataError("");
+
+    try {
+      const response = await fetch(`${API_URL}/metrics/latest-searches`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch latest searches: ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      setLatestSearches(data);
+    } catch (err) {
+      setDataError(
+        err instanceof Error ? err.message : "Failed to fetch latest searches"
+      );
+      setLatestSearches(null);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const fetchAccessCodes = async (page: number = 1, limit: number = 10) => {
+    if (!accessToken) return;
+
+    setIsLoadingData(true);
+    setDataError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/metrics/access-codes?page=${page}&limit=${limit}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch access codes: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setAccessCodes(data);
+    } catch (err) {
+      setDataError(
+        err instanceof Error ? err.message : "Failed to fetch access codes"
+      );
+      setAccessCodes(null);
     } finally {
       setIsLoadingData(false);
     }
@@ -72,18 +244,18 @@ export function useFirestore(accessToken: string | null, isAuthenticated: boolea
 
   const fetchFirestoreData = async (collection: string) => {
     if (!accessToken) return;
-    
+
     setIsLoadingData(true);
-    setDataError('');
-    
+    setDataError("");
+
     try {
       const response = await fetch(`${API_URL}/metrics/${collection}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -93,34 +265,45 @@ export function useFirestore(accessToken: string | null, isAuthenticated: boolea
       const data = await response.json();
       setFirestoreData(Array.isArray(data) ? data : []);
     } catch (err) {
-      setDataError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setDataError(err instanceof Error ? err.message : "Failed to fetch data");
       setFirestoreData([]);
     } finally {
       setIsLoadingData(false);
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated && accessToken) {
-      fetchPostsStats();
-    }
-  }, [isAuthenticated, accessToken]);
+  // Remove auto-fetch on mount - let components fetch when needed
+  // useEffect(() => {
+  //   if (isAuthenticated && accessToken) {
+  //     fetchLandingStats();
+  //   }
+  // }, [isAuthenticated, accessToken]);
 
   const resetData = () => {
     setFirestoreData([]);
-    setPostsStats(null);
-    setDataError('');
+    setLandingStats(null);
+    setUserMetrics(null);
+    setLatestSearches(null);
+    setAccessCodes(null);
+    setDataError("");
   };
 
   return {
     firestoreData,
-    postsStats,
+    landingStats,
+    userMetrics,
+    latestSearches,
+    accessCodes,
     selectedCollection,
     setSelectedCollection,
     isLoadingData,
     dataError,
     fetchFirestoreData,
-    fetchPostsStats,
+    fetchLandingStats,
+    fetchUserMetrics,
+    fetchLatestSearches,
+    fetchAccessCodes,
+    fetchAvailableMonths,
     resetData,
   };
 }

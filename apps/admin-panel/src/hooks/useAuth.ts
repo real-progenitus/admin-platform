@@ -8,8 +8,9 @@ export function useAuth() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<LoginResponse['user'] | null>(null);
+  const [user, setUser] = useState<LoginResponse["user"] | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,17 +18,18 @@ export function useAuth() {
   }, []);
 
   const refreshAccessToken = async () => {
+    setIsCheckingAuth(true);
     try {
       const response = await fetch(`${API_URL}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
       });
 
       if (response.ok) {
         const data = await response.json();
         setAccessToken(data.accessToken);
-        
-        const payload = JSON.parse(atob(data.accessToken.split('.')[1]));
+
+        const payload = JSON.parse(atob(data.accessToken.split(".")[1]));
         setUser({
           id: payload.sub,
           email: payload.email,
@@ -37,28 +39,30 @@ export function useAuth() {
       }
     } catch (err) {
       // Refresh failed, user needs to login again
+    } finally {
+      setIsCheckingAuth(false);
     }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       const loginRequest: LoginRequest = { email, password };
-      
+
       const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(loginRequest),
       });
 
       if (!response.ok) {
-        throw new Error('Invalid credentials');
+        throw new Error("Invalid credentials");
       }
 
       const data: LoginResponse = await response.json();
@@ -66,7 +70,7 @@ export function useAuth() {
       setIsAuthenticated(true);
       setUser(data.user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -75,18 +79,18 @@ export function useAuth() {
   const handleLogout = async () => {
     try {
       await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
       });
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
     }
-    
+
     setAccessToken(null);
     setIsAuthenticated(false);
     setUser(null);
-    setEmail('');
-    setPassword('');
+    setEmail("");
+    setPassword("");
   };
 
   return {
@@ -96,6 +100,7 @@ export function useAuth() {
     setPassword,
     error,
     isLoading,
+    isCheckingAuth,
     isAuthenticated,
     user,
     accessToken,
