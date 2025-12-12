@@ -51,6 +51,19 @@ export interface AccessCodes {
   totalPages: number;
 }
 
+export interface Messages {
+  totalMessages: number;
+  conversations: Array<{
+    senderId: string;
+    receiverId: string;
+    postId: string;
+    postTitle: string;
+    messageCount: number;
+    lastMessage: string;
+    lastTimestamp: number;
+  }>;
+}
+
 export interface PostsStats {
   totalUsers: number;
   totalPosts: number;
@@ -89,12 +102,14 @@ export interface DashboardProps {
   userMetrics: UserMetrics | null;
   latestSearches: LatestSearches | null;
   accessCodes: AccessCodes | null;
+  messages: Messages | null;
   isLoadingData: boolean;
   dataError: string;
   fetchLandingStats: () => void;
   fetchUserMetrics: (year?: number, month?: number) => void;
   fetchLatestSearches: () => void;
   fetchAccessCodes: (page?: number, limit?: number) => void;
+  fetchMessages: () => void;
   fetchAvailableMonths: () => Promise<string[]>;
   accessToken: string | null;
 }
@@ -108,9 +123,9 @@ export interface StatCardProps {
 }
 
 export interface NavigationDrawerProps {
-  activeTab: "landing" | "regions" | "user-management" | "user-metrics" | "access-codes" | "latest-searches";
+  activeTab: "landing" | "regions" | "user-management" | "user-metrics" | "access-codes" | "latest-searches" | "messages";
   isMobileMenuOpen: boolean;
-  onTabChange: (tab: "landing" | "regions" | "user-management" | "user-metrics" | "access-codes" | "latest-searches") => void;
+  onTabChange: (tab: "landing" | "regions" | "user-management" | "user-metrics" | "access-codes" | "latest-searches" | "messages") => void;
   onMobileMenuToggle: () => void;
   username: string;
   onLogout: () => void;

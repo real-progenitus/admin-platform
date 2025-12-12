@@ -54,6 +54,19 @@ interface AccessCodes {
   totalPages: number;
 }
 
+interface Messages {
+  totalMessages: number;
+  conversations: Array<{
+    senderId: string;
+    receiverId: string;
+    postId: string;
+    postTitle: string;
+    messageCount: number;
+    lastMessage: string;
+    lastTimestamp: number;
+  }>;
+}
+
 export function useFirestore(
   accessToken: string | null,
   isAuthenticated: boolean,
@@ -66,6 +79,7 @@ export function useFirestore(
     null
   );
   const [accessCodes, setAccessCodes] = useState<AccessCodes | null>(null);
+  const [messages, setMessages] = useState<Messages | null>(null);
   const [selectedCollection, setSelectedCollection] = useState("Posts");
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataError, setDataError] = useState("");
@@ -269,6 +283,46 @@ export function useFirestore(
     }
   }, [accessToken, environment]);
 
+  const fetchMessages = useCallback(async () => {
+    if (!accessToken) return;
+
+    setIsLoadingData(true);
+    setDataError("");
+
+    try {
+      const params = new URLSearchParams();
+      if (environment) {
+        params.append('environment', environment);
+      }
+
+      const queryString = params.toString();
+      const url = `${API_URL}/metrics/messages${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch messages: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setMessages(data);
+    } catch (err) {
+      setDataError(
+        err instanceof Error ? err.message : "Failed to fetch messages"
+      );
+      setMessages(null);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [accessToken, environment]);
+
   const fetchFirestoreData = useCallback(async (collection: string) => {
     if (!accessToken) return;
 
@@ -320,6 +374,7 @@ export function useFirestore(
     setUserMetrics(null);
     setLatestSearches(null);
     setAccessCodes(null);
+    setMessages(null);
     setDataError("");
   };
 
@@ -329,6 +384,7 @@ export function useFirestore(
     userMetrics,
     latestSearches,
     accessCodes,
+    messages,
     selectedCollection,
     setSelectedCollection,
     isLoadingData,
@@ -338,6 +394,7 @@ export function useFirestore(
     fetchUserMetrics,
     fetchLatestSearches,
     fetchAccessCodes,
+    fetchMessages,
     fetchAvailableMonths,
     resetData,
   };

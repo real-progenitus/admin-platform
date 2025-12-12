@@ -30,10 +30,12 @@ export function Dashboard({
   userMetrics,
   latestSearches,
   accessCodes,
+  messages,
   fetchLandingStats,
   fetchUserMetrics,
   fetchLatestSearches,
   fetchAccessCodes,
+  fetchMessages,
   fetchAvailableMonths,
   accessToken,
 }: DashboardProps) {
@@ -45,6 +47,7 @@ export function Dashboard({
     | "user-metrics"
     | "access-codes"
     | "latest-searches"
+    | "messages"
   >("landing");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -101,6 +104,9 @@ export function Dashboard({
       case "user-metrics":
         if (!userMetrics) fetchUserMetrics();
         break;
+      case "messages":
+        if (!messages) fetchMessages();
+        break;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -120,6 +126,9 @@ export function Dashboard({
       case "user-metrics":
         fetchUserMetrics();
         break;
+      case "messages":
+        fetchMessages();
+        break;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [environment]);
@@ -136,7 +145,7 @@ export function Dashboard({
       />
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 w-full p-4 md:p-6 pt-20 md:pt-6">
+      <main className="flex-1 min-w-0 w-full p-4 md:p-6 pt-20 md:pt-6 md:ml-64">
         <div className="max-w-6xl mx-auto w-full">
           {activeTab === "landing" ? (
             <>
@@ -382,6 +391,101 @@ export function Dashboard({
                   latestSearches={latestSearches.latestSearches}
                   searchLogsLastWeek={latestSearches.searchLogsLastWeek}
                 />
+              )}
+            </>
+          ) : activeTab === "messages" ? (
+            <>
+              <SectionHeader
+                title="Messages"
+                subtitle="User conversations and activity"
+                icon={
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                }
+                gradientFrom="from-pink-400"
+                gradientTo="to-pink-600"
+              />
+              
+              {/* Total Messages Widget */}
+              <div className="mb-6">
+                <StatCard
+                  title="Total Messages"
+                  value={messages?.totalMessages ?? "—"}
+                  iconGradient="bg-gradient-to-br from-pink-400 to-pink-600"
+                  icon={
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                  }
+                />
+              </div>
+
+              {/* Conversations Table */}
+              {messages?.conversations && messages.conversations.length > 0 && (
+                <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+                  <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-bold text-gray-800">Recent Conversations</h3>
+                    <p className="text-sm text-gray-600 mt-1">Last 20 conversations by activity</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Sender
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Receiver
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Post
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Messages
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Last Message
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Last Activity
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {messages.conversations.map((conv, idx) => (
+                          <tr key={`${conv.senderId}_${conv.receiverId}_${conv.postId}`} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {conv.senderId}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {conv.receiverId}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              <div className="max-w-xs truncate" title={conv.postTitle}>
+                                {conv.postTitle}
+                              </div>
+                              <div className="text-xs text-gray-500">{conv.postId}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                {conv.messageCount}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              <div className="max-w-xs truncate" title={conv.lastMessage}>
+                                {conv.lastMessage}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(conv.lastTimestamp).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
             </>
           ) : null}

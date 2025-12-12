@@ -36,8 +36,9 @@ export function NavigationDrawer({
       {/* Left Drawer Navigation */}
       <aside
         className={`
-          fixed md:static inset-y-0 left-0 z-40
+          fixed inset-y-0 left-0 z-40
           w-64 bg-white/90 backdrop-blur-lg shadow-2xl border-r border-gray-200 flex flex-col
+          h-screen max-h-screen overflow-hidden
           transform transition-transform duration-300 ease-in-out
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
@@ -45,7 +46,7 @@ export function NavigationDrawer({
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-md font-bold text-gray-800">{username}</h2>
         </div>
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4 overflow-y-auto">
           <button
             onClick={() => {
               onTabChange("landing");
@@ -121,7 +122,7 @@ export function NavigationDrawer({
               onTabChange("latest-searches");
               onMobileMenuToggle();
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-200 ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-200 mb-2 ${
               activeTab === "latest-searches"
                 ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg"
                 : "text-gray-700 hover:bg-gray-100"
@@ -129,6 +130,22 @@ export function NavigationDrawer({
           >
             <SearchIcon className="w-5 h-5" />
             Latest Searches
+          </button>
+          <button
+            onClick={() => {
+              onTabChange("messages");
+              onMobileMenuToggle();
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-200 ${
+              activeTab === "messages"
+                ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            Messages
           </button>
         </nav>
         

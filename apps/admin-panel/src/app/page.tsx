@@ -31,12 +31,14 @@ export default function Home() {
         userMetrics={firestore.userMetrics}
         latestSearches={firestore.latestSearches}
         accessCodes={firestore.accessCodes}
+        messages={firestore.messages}
         isLoadingData={firestore.isLoadingData}
         dataError={firestore.dataError}
         fetchLandingStats={firestore.fetchLandingStats}
         fetchUserMetrics={firestore.fetchUserMetrics}
         fetchLatestSearches={firestore.fetchLatestSearches}
         fetchAccessCodes={firestore.fetchAccessCodes}
+        fetchMessages={firestore.fetchMessages}
         fetchAvailableMonths={firestore.fetchAvailableMonths}
         accessToken={auth.accessToken}
       />

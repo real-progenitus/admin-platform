@@ -166,6 +166,64 @@ export class MetricsController {
     };
   }
 
+  @Get('messages')
+  async getMessages(@Query('environment') environment?: string) {
+    const messages = await this.firestoreService.getCollection('Messages', environment);
+
+    // Group messages by conversation (unique combination of senderId, receiverId, and postId)
+    const conversationsMap = new Map<string, any>();
+
+    messages.forEach((message: any) => {
+      // Create a unique key for the conversation
+      // Sort the user IDs to ensure same conversation regardless of sender/receiver order
+      const userIds = [message.senderId, message.receiverId].sort();
+      const conversationKey = `${userIds[0]}_${userIds[1]}_${message.postId}`;
+
+      if (!conversationsMap.has(conversationKey)) {
+        conversationsMap.set(conversationKey, {
+          senderId: message.senderId,
+          receiverId: message.receiverId,
+          postId: message.postId,
+          postTitle: message.postTitle,
+          messageCount: 0,
+          lastMessage: message.message,
+          lastTimestamp: message.timestamp?.toMillis ? message.timestamp.toMillis() : message.timestamp,
+          messages: [],
+        });
+      }
+
+      const conversation = conversationsMap.get(conversationKey);
+      conversation.messageCount++;
+      conversation.messages.push(message);
+
+      // Update last message if this one is more recent
+      const messageTimestamp = message.timestamp?.toMillis ? message.timestamp.toMillis() : message.timestamp;
+      if (messageTimestamp > conversation.lastTimestamp) {
+        conversation.lastTimestamp = messageTimestamp;
+        conversation.lastMessage = message.message;
+      }
+    });
+
+    // Convert to array and sort by last timestamp
+    const conversations = Array.from(conversationsMap.values())
+      .sort((a, b) => b.lastTimestamp - a.lastTimestamp)
+      .slice(0, 20)
+      .map((conv) => ({
+        senderId: conv.senderId,
+        receiverId: conv.receiverId,
+        postId: conv.postId,
+        postTitle: conv.postTitle,
+        messageCount: conv.messageCount,
+        lastMessage: conv.lastMessage,
+        lastTimestamp: conv.lastTimestamp,
+      }));
+
+    return {
+      totalMessages: messages.length,
+      conversations,
+    };
+  }
+
   @Get('access-codes')
   async getAccessCodes(
     @Query('page') page?: string,
