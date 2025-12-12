@@ -2,13 +2,15 @@
 
 import { useAuth } from '../hooks/useAuth';
 import { useFirestore } from '../hooks/useFirestore';
+import { useEnvironment } from '../contexts/EnvironmentContext';
 import { LoginForm } from '../components/LoginForm';
 import { Dashboard } from '../components/Dashboard';
 import { LoadingScreen } from "../components/LoadingScreen";
 
 export default function Home() {
   const auth = useAuth();
-  const firestore = useFirestore(auth.accessToken, auth.isAuthenticated);
+  const { environment } = useEnvironment();
+  const firestore = useFirestore(auth.accessToken, auth.isAuthenticated, environment);
 
   const handleLogout = async () => {
     await auth.handleLogout();

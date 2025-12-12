@@ -1,6 +1,7 @@
 import React from "react";
 import { NavigationDrawerProps } from "./types";
 import { MenuIcon, CloseIcon, HomeIcon, GlobeIcon, UsersIcon, CalendarIcon, InboxIcon, SearchIcon, LogoutIcon } from "./icons";
+import { EnvironmentSelector } from "../EnvironmentSelector";
 
 export function NavigationDrawer({
   activeTab,
@@ -131,6 +132,11 @@ export function NavigationDrawer({
           </button>
         </nav>
         
+        {/* Environment Selector */}
+        <div className="px-4 py-3 border-t border-gray-200">
+          <EnvironmentSelector />
+        </div>
+
         {/* Logout Button at Bottom */}
         <div className="p-4 border-t border-gray-200">
           <button

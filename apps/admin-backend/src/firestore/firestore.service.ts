@@ -44,15 +44,32 @@ export class FirestoreService implements OnModuleInit {
   }
 
   /**
+   * Apply environment prefix to collection name
+   * @param collection - The base collection name
+   * @param environment - The environment (production or qa)
+   */
+  private applyEnvironmentPrefix(
+    collection: string,
+    environment?: string,
+  ): string {
+    if (environment && environment.toLowerCase() === 'qa') {
+      return `QA_${collection}`;
+    }
+    return collection;
+  }
+
+  /**
    * Get a single document by ID from a collection
    */
   async getDocument<T = any>(
     collection: string,
     documentId: string,
+    environment?: string,
   ): Promise<T | null> {
+    const collectionName = this.applyEnvironmentPrefix(collection, environment);
     try {
       const doc = await this.firestore
-        .collection(collection)
+        .collection(collectionName)
         .doc(documentId)
         .get();
 
@@ -63,7 +80,7 @@ export class FirestoreService implements OnModuleInit {
       return { id: doc.id, ...doc.data() } as T;
     } catch (error) {
       this.logger.error(
-        `Error getting document ${documentId} from ${collection}:`,
+        `Error getting document ${documentId} from ${collectionName}:`,
         error,
       );
       throw error;
@@ -73,16 +90,18 @@ export class FirestoreService implements OnModuleInit {
   /**
    * Get all documents from a collection
    */
-  async getCollection<T = any>(collection: string): Promise<T[]> {
+  async getCollection<T = any>(collection: string, environment?: string): Promise<T[]> {
     try {
-      const snapshot = await this.firestore.collection(collection).get();
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
+      const snapshot = await this.firestore.collection(collectionName).get();
 
       return snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as T[];
     } catch (error) {
-      this.logger.error(`Error getting collection ${collection}:`, error);
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
+      this.logger.error(`Error getting collection ${collectionName}:`, error);
       throw error;
     }
   }
@@ -95,10 +114,12 @@ export class FirestoreService implements OnModuleInit {
     field: string,
     operator: admin.firestore.WhereFilterOp,
     value: any,
+    environment?: string,
   ): Promise<T[]> {
     try {
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
       const snapshot = await this.firestore
-        .collection(collection)
+        .collection(collectionName)
         .where(field, operator, value)
         .get();
 
@@ -107,7 +128,8 @@ export class FirestoreService implements OnModuleInit {
         ...doc.data(),
       })) as T[];
     } catch (error) {
-      this.logger.error(`Error querying ${collection}:`, error);
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
+      this.logger.error(`Error querying ${collectionName}:`, error);
       throw error;
     }
   }
@@ -119,16 +141,18 @@ export class FirestoreService implements OnModuleInit {
     collection: string,
     documentId: string,
     data: any,
+    environment?: string,
   ): Promise<void> {
+    const collectionName = this.applyEnvironmentPrefix(collection, environment);
     try {
       await this.firestore
-        .collection(collection)
+        .collection(collectionName)
         .doc(documentId)
         .set(data, { merge: true });
-      this.logger.log(`Document ${documentId} updated in ${collection}`);
+      this.logger.log(`Document ${documentId} updated in ${collectionName}`);
     } catch (error) {
       this.logger.error(
-        `Error updating document ${documentId} in ${collection}:`,
+        `Error updating document ${documentId} in ${collectionName}:`,
         error,
       );
       throw error;
@@ -142,12 +166,14 @@ export class FirestoreService implements OnModuleInit {
     collection: string,
     limit: number = 10,
     startAfterDoc?: admin.firestore.DocumentSnapshot,
+    environment?: string,
   ): Promise<{
     documents: T[];
     lastDoc: admin.firestore.DocumentSnapshot | null;
   }> {
     try {
-      let query = this.firestore.collection(collection).limit(limit);
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
+      let query = this.firestore.collection(collectionName).limit(limit);
 
       if (startAfterDoc) {
         query = query.startAfter(startAfterDoc);
@@ -167,8 +193,9 @@ export class FirestoreService implements OnModuleInit {
 
       return { documents, lastDoc };
     } catch (error) {
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
       this.logger.error(
-        `Error getting paginated collection ${collection}:`,
+        `Error getting paginated collection ${collectionName}:`,
         error,
       );
       throw error;
@@ -182,16 +209,19 @@ export class FirestoreService implements OnModuleInit {
     collection: string,
     documentId: string,
     data: any,
+    environment?: string,
   ): Promise<void> {
     try {
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
       await this.firestore
-        .collection(collection)
+        .collection(collectionName)
         .doc(documentId)
         .set(data, { merge: true });
-      this.logger.log(`Document ${documentId} set in ${collection}`);
+      this.logger.log(`Document ${documentId} set in ${collectionName}`);
     } catch (error) {
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
       this.logger.error(
-        `Error setting document ${documentId} in ${collection}:`,
+        `Error setting document ${documentId} in ${collectionName}:`,
         error,
       );
       throw error;
@@ -201,13 +231,15 @@ export class FirestoreService implements OnModuleInit {
   /**
    * Add a new document with auto-generated ID
    */
-  async addDocument(collection: string, data: any): Promise<string> {
+  async addDocument(collection: string, data: any, environment?: string): Promise<string> {
     try {
-      const docRef = await this.firestore.collection(collection).add(data);
-      this.logger.log(`Document ${docRef.id} added to ${collection}`);
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
+      const docRef = await this.firestore.collection(collectionName).add(data);
+      this.logger.log(`Document ${docRef.id} added to ${collectionName}`);
       return docRef.id;
     } catch (error) {
-      this.logger.error(`Error adding document to ${collection}:`, error);
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
+      this.logger.error(`Error adding document to ${collectionName}:`, error);
       throw error;
     }
   }
@@ -215,13 +247,15 @@ export class FirestoreService implements OnModuleInit {
   /**
    * Delete a document
    */
-  async deleteDocument(collection: string, documentId: string): Promise<void> {
+  async deleteDocument(collection: string, documentId: string, environment?: string): Promise<void> {
     try {
-      await this.firestore.collection(collection).doc(documentId).delete();
-      this.logger.log(`Document ${documentId} deleted from ${collection}`);
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
+      await this.firestore.collection(collectionName).doc(documentId).delete();
+      this.logger.log(`Document ${documentId} deleted from ${collectionName}`);
     } catch (error) {
+      const collectionName = this.applyEnvironmentPrefix(collection, environment);
       this.logger.error(
-        `Error deleting document ${documentId} from ${collection}:`,
+        `Error deleting document ${documentId} from ${collectionName}:`,
         error,
       );
       throw error;

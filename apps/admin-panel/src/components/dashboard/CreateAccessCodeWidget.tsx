@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { KeyIcon } from "./icons";
+import { useEnvironment } from "../../contexts/EnvironmentContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
@@ -16,6 +17,7 @@ export function CreateAccessCodeWidget({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const { environment } = useEnvironment();
 
   const handleCreateCodes = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,14 @@ export function CreateAccessCodeWidget({
     setSuccess("");
 
     try {
-      const response = await fetch(`${API_URL}/metrics/access-codes/create`, {
+      const params = new URLSearchParams();
+      if (environment) {
+        params.append('environment', environment);
+      }
+      const queryString = params.toString();
+      const url = `${API_URL}/metrics/access-codes/create${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,

@@ -10,6 +10,7 @@ import { LatestSearchesWidget } from "./dashboard/LatestSearchesWidget";
 import { AccessCodesWidget } from "./dashboard/AccessCodesWidget";
 import { CreateAccessCodeWidget } from "./dashboard/CreateAccessCodeWidget";
 import { DashboardProps } from "./dashboard/types";
+import { useEnvironment } from "../contexts/EnvironmentContext";
 import {
   UsersIcon,
   SearchIcon,
@@ -47,6 +48,7 @@ export function Dashboard({
   >("landing");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const { environment } = useEnvironment();
 
   // Function to recalculate average rewards
   const handleRecalculate = async () => {
@@ -54,16 +56,20 @@ export function Dashboard({
 
     setIsRecalculating(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/metrics/recalculate-average-rewards`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const params = new URLSearchParams();
+      if (environment) {
+        params.append('environment', environment);
+      }
+      const queryString = params.toString();
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/metrics/recalculate-average-rewards${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error("Failed to recalculate");
@@ -80,7 +86,7 @@ export function Dashboard({
     }
   };
 
-  // Lazy load data based on active tab
+  // Lazy load data based on active tab (only on initial load, not on environment change)
   useEffect(() => {
     switch (activeTab) {
       case "landing":
@@ -92,9 +98,31 @@ export function Dashboard({
       case "access-codes":
         if (!accessCodes) fetchAccessCodes();
         break;
-      // Note: user-metrics is loaded by UserGrowthChart component
+      case "user-metrics":
+        if (!userMetrics) fetchUserMetrics();
+        break;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  // Refetch data when environment changes
+  useEffect(() => {
+    switch (activeTab) {
+      case "landing":
+        fetchLandingStats();
+        break;
+      case "latest-searches":
+        fetchLatestSearches();
+        break;
+      case "access-codes":
+        fetchAccessCodes();
+        break;
+      case "user-metrics":
+        fetchUserMetrics();
+        break;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [environment]);
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -305,13 +333,15 @@ export function Dashboard({
               </div>
 
               {/* User Growth Chart - Full Width */}
-              <div className="mb-6">
-                <UserGrowthChart
-                  userGrowth={userMetrics?.userGrowth || []}
-                  fetchUserMetrics={fetchUserMetrics}
-                  fetchAvailableMonths={fetchAvailableMonths}
-                />
-              </div>
+              {environment !== 'qa' && (
+                <div className="mb-6">
+                  <UserGrowthChart
+                    userGrowth={userMetrics?.userGrowth || []}
+                    fetchUserMetrics={fetchUserMetrics}
+                    fetchAvailableMonths={fetchAvailableMonths}
+                  />
+                </div>
+              )}
             </>
           ) : activeTab === "access-codes" ? (
             <>

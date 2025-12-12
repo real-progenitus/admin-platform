@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
@@ -56,7 +56,8 @@ interface AccessCodes {
 
 export function useFirestore(
   accessToken: string | null,
-  isAuthenticated: boolean
+  isAuthenticated: boolean,
+  environment?: string,
 ) {
   const [firestoreData, setFirestoreData] = useState<any[]>([]);
   const [landingStats, setLandingStats] = useState<LandingStats | null>(null);
@@ -69,14 +70,22 @@ export function useFirestore(
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [dataError, setDataError] = useState("");
 
-  const fetchLandingStats = async () => {
+  const fetchLandingStats = useCallback(async () => {
     if (!accessToken) return;
 
     setIsLoadingData(true);
     setDataError("");
 
     try {
-      const response = await fetch(`${API_URL}/metrics/posts/stats`, {
+      const params = new URLSearchParams();
+      if (environment) {
+        params.append('environment', environment);
+      }
+
+      const queryString = params.toString();
+      const url = `${API_URL}/metrics/posts/stats${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -99,9 +108,9 @@ export function useFirestore(
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [accessToken, environment]);
 
-  const fetchUserMetrics = async (year?: number, month?: number) => {
+  const fetchUserMetrics = useCallback(async (year?: number, month?: number) => {
     if (!accessToken) return;
 
     setIsLoadingData(true);
@@ -113,7 +122,10 @@ export function useFirestore(
         params.append("year", year.toString());
         params.append("month", month.toString());
       }
-
+      if (environment) {
+        params.append('environment', environment);
+      }
+      
       const url = `${API_URL}/metrics/user-metrics${
         params.toString() ? `?${params.toString()}` : ""
       }`;
@@ -141,9 +153,9 @@ export function useFirestore(
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [accessToken, environment]);
 
-  const fetchAvailableMonths = async () => {
+  const fetchAvailableMonths = useCallback(async () => {
     if (!accessToken) return [];
 
     try {
@@ -171,16 +183,24 @@ export function useFirestore(
       console.error("Error fetching available months:", err);
       return [];
     }
-  };
+  }, [accessToken]);
 
-  const fetchLatestSearches = async () => {
+  const fetchLatestSearches = useCallback(async () => {
     if (!accessToken) return;
 
     setIsLoadingData(true);
     setDataError("");
 
     try {
-      const response = await fetch(`${API_URL}/metrics/latest-searches`, {
+      const params = new URLSearchParams();
+      if (environment) {
+        params.append('environment', environment);
+      }
+
+      const queryString = params.toString();
+      const url = `${API_URL}/metrics/latest-searches${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -205,17 +225,24 @@ export function useFirestore(
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [accessToken, environment]);
 
-  const fetchAccessCodes = async (page: number = 1, limit: number = 10) => {
+  const fetchAccessCodes = useCallback(async (page: number = 1, limit: number = 10) => {
     if (!accessToken) return;
 
     setIsLoadingData(true);
     setDataError("");
 
     try {
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (environment) {
+        params.append('environment', environment);
+      }
+
       const response = await fetch(
-        `${API_URL}/metrics/access-codes?page=${page}&limit=${limit}`,
+        `${API_URL}/metrics/access-codes?${params.toString()}`,
         {
           method: "GET",
           headers: {
@@ -240,16 +267,24 @@ export function useFirestore(
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [accessToken, environment]);
 
-  const fetchFirestoreData = async (collection: string) => {
+  const fetchFirestoreData = useCallback(async (collection: string) => {
     if (!accessToken) return;
 
     setIsLoadingData(true);
     setDataError("");
 
     try {
-      const response = await fetch(`${API_URL}/metrics/${collection}`, {
+      const params = new URLSearchParams();
+      if (environment) {
+        params.append('environment', environment);
+      }
+
+      const queryString = params.toString();
+      const url = `${API_URL}/metrics/${collection}${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -270,7 +305,7 @@ export function useFirestore(
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [accessToken, environment]);
 
   // Remove auto-fetch on mount - let components fetch when needed
   // useEffect(() => {

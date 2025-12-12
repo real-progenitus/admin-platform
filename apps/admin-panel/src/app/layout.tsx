@@ -1,5 +1,6 @@
 import './globals.css';
 import { Metadata, Viewport } from "next";
+import { EnvironmentProvider } from '../contexts/EnvironmentContext';
 
 export const metadata: Metadata = {
   title: "Admin Panel",
@@ -19,7 +20,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 overflow-x-hidden">{children}</body>
+      <body className="bg-gray-50 overflow-x-hidden">
+        <EnvironmentProvider>
+          {children}
+        </EnvironmentProvider>
+      </body>
     </html>
   );
 }

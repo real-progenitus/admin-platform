@@ -17,11 +17,11 @@ export class MetricsController {
   constructor(private readonly firestoreService: FirestoreService) {}
 
   @Get('posts/stats')
-  async getPostsStats() {
+  async getPostsStats(@Query('environment') environment?: string) {
     const [allPosts, searchLogs, averageRewards] = await Promise.all([
-      this.firestoreService.getCollection('Posts'),
-      this.firestoreService.getCollection('SearchLogs'),
-      this.firestoreService.getDocument('Dynamic', 'average_rewards'),
+      this.firestoreService.getCollection('Posts', environment),
+      this.firestoreService.getCollection('SearchLogs', environment),
+      this.firestoreService.getDocument('Dynamic', 'average_rewards', environment),
     ]);
 
     const postsWithReward = allPosts.filter(
@@ -86,16 +86,21 @@ export class MetricsController {
   async getUserMetrics(
     @Query('year') year?: string,
     @Query('month') month?: string,
+    @Query('environment') environment?: string,
   ) {
     const [partners, partnerLocations] = await Promise.all([
-      this.firestoreService.getCollection('Partners'),
-      this.firestoreService.getCollection('PartnerLocations'),
+      this.firestoreService.getCollection('Partners', environment),
+      this.firestoreService.getCollection('PartnerLocations', environment),
     ]);
 
     let userGrowth: { date: string; count: number }[] = [];
     let totalUsers = 0;
 
-    if (year && month) {
+    if (environment && environment.toLowerCase() === 'qa') {
+      // In QA mode, get user count from QA_Users collection instead of Firebase Auth
+      const users = await this.firestoreService.getCollection('Users', environment);
+      totalUsers = users.length;
+    } else if (year && month) {
       // Fetch data for specific month (this also returns total count)
       const result = await this.firestoreService.getUserGrowthForMonth(
         parseInt(year, 10),
@@ -104,7 +109,7 @@ export class MetricsController {
       userGrowth = result.dailyData;
       totalUsers = result.totalUsers;
     } else {
-      // Just get total users count
+      // Just get total users count from Firebase Auth
       totalUsers = await this.firestoreService.getAuthenticatedUsersCount();
     }
 
@@ -123,8 +128,8 @@ export class MetricsController {
   }
 
   @Get('latest-searches')
-  async getLatestSearches() {
-    const searchLogs = await this.firestoreService.getCollection('SearchLogs');
+  async getLatestSearches(@Query('environment') environment?: string) {
+    const searchLogs = await this.firestoreService.getCollection('SearchLogs', environment);
 
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const searchLogsLastWeek = searchLogs.filter((log: any) => {
@@ -165,9 +170,10 @@ export class MetricsController {
   async getAccessCodes(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('environment') environment?: string,
   ) {
     const accessCodes =
-      await this.firestoreService.getCollection('AccessCodes');
+      await this.firestoreService.getCollection('AccessCodes', environment);
 
     // Sort by createdAt descending
     const sortedAccessCodes = accessCodes
@@ -209,6 +215,7 @@ export class MetricsController {
   @Post('access-codes/create')
   async createAccessCodes(@Body() body: { count: number }, @Request() req) {
     const { count } = body;
+    const environment = req.query?.environment;
 
     if (!count || count < 1 || count > 100) {
       throw new Error('Count must be between 1 and 100');
@@ -223,7 +230,7 @@ export class MetricsController {
         isUsed: false,
         createdAt: new Date(),
         createdBy,
-      });
+      }, environment);
       codes.push(code);
     }
 
@@ -234,8 +241,8 @@ export class MetricsController {
   }
 
   @Post('recalculate-average-rewards')
-  async recalculateAverageRewards() {
-    const allPosts = await this.firestoreService.getCollection('Posts');
+  async recalculateAverageRewards(@Query('environment') environment?: string) {
+    const allPosts = await this.firestoreService.getCollection('Posts', environment);
 
     // Initialize counters for each category
     const rewardData: Record<
@@ -267,6 +274,7 @@ export class MetricsController {
       'Dynamic',
       'average_rewards',
       rewardData,
+      environment,
     );
 
     return {
@@ -286,16 +294,20 @@ export class MetricsController {
   }
 
   @Get(':collection')
-  async getCollection(@Param('collection') collection: string) {
-    return this.firestoreService.getCollection(collection);
+  async getCollection(
+    @Param('collection') collection: string,
+    @Query('environment') environment?: string,
+  ) {
+    return this.firestoreService.getCollection(collection, environment);
   }
 
   @Get(':collection/:id')
   async getDocument(
     @Param('collection') collection: string,
     @Param('id') id: string,
+    @Query('environment') environment?: string,
   ) {
-    return this.firestoreService.getDocument(collection, id);
+    return this.firestoreService.getDocument(collection, id, environment);
   }
 
   @Get(':collection/query/:field')
@@ -304,12 +316,14 @@ export class MetricsController {
     @Param('field') field: string,
     @Query('operator') operator: any,
     @Query('value') value: any,
+    @Query('environment') environment?: string,
   ) {
     return this.firestoreService.queryDocuments(
       collection,
       field,
       operator || '==',
       value,
+      environment,
     );
   }
 }
